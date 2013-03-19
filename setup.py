@@ -2,13 +2,12 @@
 # # coding: utf-8
 
 from setuptools import setup
-from apitopy import __version__
 
 setup(
     name='apitopy',
     description='Pythonic access to HTTP APIs',
     long_description='Access arbitrary HTTP APIs as if they were python objects',
-    version=__version__,
+    version='0.1.0',
     author='Carles Barrobés',
     author_email='carles@barrobes.com',
     url='https://github.com/txels/apitopy',

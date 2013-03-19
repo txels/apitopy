@@ -1,8 +1,6 @@
 import requests
 from supermutes.dot import dotify
 
-__version__ = '0.1.0'
-
 
 class HttpStatusError(Exception):
     pass
