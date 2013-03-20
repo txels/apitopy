@@ -1,3 +1,4 @@
+from functools import partial
 import requests
 from supermutes.dot import dotify
 
@@ -55,10 +56,10 @@ class EndPoint(object):
         if kwargs:
             url_args = ['{0}={1}'.format(k, v) for k, v in kwargs.items()]
             extra = '?' + '&'.join(url_args)
-        return self.get("{0}{1}{2}".format(self.path, self.suffix, extra))
+        return self.GET("{0}{1}{2}".format(self.path, self.suffix, extra))
 
-    def get(self, url):
-        response = self.api.get(url)
+    def GET(self, url):
+        response = self.api.GET(url)
         return dotify(response.json())
 
 
@@ -80,42 +81,32 @@ class Api(object):
     >>> all = api.products[9134].people()
     >>> my_email = all[0].email
     """
+    http_verbs = ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'HEAD', 'OPTIONS']
 
     def __init__(self, base_url, auth=None, verify_ssl_cert=True,
-                 suffix=''):
+                 suffix='', verbose=False):
         self.ROOT = base_url
         self.auth = auth
         self.verify_ssl_cert = verify_ssl_cert
         self.suffix = suffix
+        self.verbose = verbose
 
-    def get(self, path, **kwargs):
+    def _http(self, verb, path, **kwargs):
         """
-        Perform an HTTP GET request.
-
-        This will add required authentication and SSL verification arguments.
-        """
-        url = self.ROOT + path
-        print('GET ' + url)
-        response = requests.get(url,
-                                auth=self.auth,
-                                verify=self.verify_ssl_cert,
-                                headers={'Accept': 'application/json'},
-                                **kwargs)
-        return _validate(response)
-
-    def post(self, path, **kwargs):
-        """
-        Perform an HTTP POST request.
+        Perform an HTTP request.
 
         This will add required authentication and SSL verification arguments.
         """
         url = self.ROOT + path
-        print('POST ' + url)
-        response = requests.post(url,
-                                 auth=self.auth,
-                                 verify=self.verify_ssl_cert,
-                                 headers={'Accept': 'application/json'},
-                                 **kwargs)
+        if self.verbose:
+            print('{0} {1}'.format(verb, url))
+
+        method = getattr(requests, verb.lower())
+        response = method(url,
+                          auth=self.auth,
+                          verify=self.verify_ssl_cert,
+                          headers={'Accept': 'application/json'},
+                          **kwargs)
         return _validate(response)
 
     def __getattr__(self, attr):
@@ -124,5 +115,7 @@ class Api(object):
 
         Underscores '_' will be replaced with slashes '/'
         """
+        if attr in self.http_verbs:
+            return partial(self._http, attr)
         path = '/'.join(attr.split('_'))
         return EndPoint(self, path, self.suffix)
