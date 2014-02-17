@@ -103,13 +103,17 @@ class Api(object):
     """
 
     def __init__(self, base_url, auth=None, verify_ssl_cert=True,
-                 suffix='', verbose=False, ensure_slash=False):
+                 suffix='', verbose=False, ensure_slash=False, headers=None):
         self.ROOT = base_url
         self.auth = auth
         self.verify_ssl_cert = verify_ssl_cert
         self.suffix = suffix
         self.verbose = verbose
         self.ensure_slash = ensure_slash
+        self.headers = headers or {}
+        self.headers.update({
+            'Accept': 'application/json',
+        })
 
     def _http(self, verb, path, **kwargs):
         """
@@ -125,7 +129,7 @@ class Api(object):
         response = method(url,
                           auth=self.auth,
                           verify=self.verify_ssl_cert,
-                          headers={'Accept': 'application/json'},
+                          headers=self.headers,
                           **kwargs)
         return _validate(response)
 
