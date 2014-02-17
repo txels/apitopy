@@ -1,4 +1,6 @@
 from functools import partial
+from urllib import urlencode
+
 import requests
 from supermutes.dot import dotify
 
@@ -14,6 +16,7 @@ class HttpNotFoundError(HttpStatusError):
 HTTP_ERROR_MAP = {
     404: HttpNotFoundError,
 }
+HTTP_VERBS = ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'HEAD', 'OPTIONS']
 
 
 def _validate(response):
@@ -49,18 +52,35 @@ class EndPoint(object):
                         self.suffix)
 
     def __getattr__(self, attr):
+        if attr in HTTP_VERBS:
+            return partial(self._http, attr)
         return self[attr]
 
     def __call__(self, **kwargs):
+        return self.GET(**kwargs)
+
+    def build_url(self, verb='GET', **kwargs):
+        """
+        Build a URL from base path, use kwargs to build querystring.
+
+        """
+        path = self.path
+        # Check whether to ensure trailing slash on POST:
+        if self.api.ensure_slash and verb == 'POST' and not path.endswith('/'):
+            path = path + '/'
         extra = ''
         if kwargs:
-            url_args = ['{0}={1}'.format(k, v) for k, v in kwargs.items()]
-            extra = '?' + '&'.join(url_args)
-        return self.GET("{0}{1}{2}".format(self.path, self.suffix, extra))
+            querystring = urlencode(kwargs)
+            extra = '?' + querystring
+        return "{0}{1}{2}".format(path, self.suffix, extra)
 
-    def GET(self, url):
-        response = self.api.GET(url)
-        return dotify(response.json())
+    def _http(self, verb, data=None, **kwargs):
+        url = self.build_url(verb, **kwargs)
+        response = self.api._http(verb, url, data=data)
+        if response.content:
+            return dotify(response.json())
+        else:
+            return None
 
 
 class Api(object):
@@ -81,15 +101,15 @@ class Api(object):
     >>> all = api.products[9134].people()
     >>> my_email = all[0].email
     """
-    http_verbs = ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'HEAD', 'OPTIONS']
 
     def __init__(self, base_url, auth=None, verify_ssl_cert=True,
-                 suffix='', verbose=False):
+                 suffix='', verbose=False, ensure_slash=False):
         self.ROOT = base_url
         self.auth = auth
         self.verify_ssl_cert = verify_ssl_cert
         self.suffix = suffix
         self.verbose = verbose
+        self.ensure_slash = ensure_slash
 
     def _http(self, verb, path, **kwargs):
         """
@@ -115,7 +135,7 @@ class Api(object):
 
         Underscores '_' will be replaced with slashes '/'
         """
-        if attr in self.http_verbs:
+        if attr in HTTP_VERBS:
             return partial(self._http, attr)
         path = '/'.join(attr.split('_'))
         return EndPoint(self, path, self.suffix)

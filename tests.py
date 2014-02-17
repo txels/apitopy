@@ -45,6 +45,7 @@ def test_api_endpoint_get(_, requests):
     requests.get.assert_called_with(
         'http://example.com/people/items/24?since=today',
         auth=None,
+        data=None,
         verify=True,
         headers={'Accept': 'application/json'}
     )
