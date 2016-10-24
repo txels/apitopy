@@ -49,3 +49,12 @@ def test_api_endpoint_get(_, requests):
         verify=True,
         headers={'Accept': 'application/json'}
     )
+
+
+def test_api_endpoint_build_url_with_querystring():
+    api = Api('http://example.com/')
+    endpoint = api.people.items[24]
+
+    result = endpoint.build_url(hello='dolly')
+
+    assert_equal(result, 'people/items/24?hello=dolly')
