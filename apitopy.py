@@ -1,5 +1,8 @@
 from functools import partial
-from urllib import urlencode
+try:
+    from urllib.parse import urlencode
+except:
+    from urllib import urlencode
 
 import requests
 from supermutes.dot import dotify
