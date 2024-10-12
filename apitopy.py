@@ -75,9 +75,9 @@ class EndPoint(object):
             extra = "?" + querystring
         return "{0}{1}{2}".format(path, self.suffix, extra)
 
-    def _http(self, verb, data=None, **kwargs):
+    def _http(self, verb, data=None, json=None, **kwargs):
         url = self.build_url(verb, **kwargs)
-        response = self.api._http(verb, url, data=data)
+        response = self.api._http(verb, url, data=data, json=json)
         if response.content:
             return dotify(response.json())
         else:
@@ -122,7 +122,7 @@ class Api(object):
         self.headers = headers or {}
         self.headers.update(
             {
-                "Accept": "application/json",
+                "Accept": "application/vnd.github+json",
             }
         )
 
