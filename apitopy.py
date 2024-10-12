@@ -1,4 +1,5 @@
 from functools import partial
+
 try:
     from urllib.parse import urlencode
 except:
@@ -19,18 +20,17 @@ class HttpNotFoundError(HttpStatusError):
 HTTP_ERROR_MAP = {
     404: HttpNotFoundError,
 }
-HTTP_VERBS = ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'HEAD', 'OPTIONS']
+HTTP_VERBS = ["GET", "POST", "DELETE", "PUT", "PATCH", "HEAD", "OPTIONS"]
 
 
 def _validate(response):
     """
     Verify the status code of the response and raise exception on codes > 400.
     """
-    message = 'HTTP Status: {0}'.format(response.status_code)
+    message = "HTTP Status: {0}".format(response.status_code)
     if response.status_code >= 400:
-        print(message)
-        exception_cls = HTTP_ERROR_MAP.get(response.status_code,
-                                           HttpStatusError)
+        print(message, response.content)
+        exception_cls = HTTP_ERROR_MAP.get(response.status_code, HttpStatusError)
         raise exception_cls(message)
     return response
 
@@ -44,15 +44,13 @@ class EndPoint(object):
     a query string.
     """
 
-    def __init__(self, api, path, suffix=''):
+    def __init__(self, api, path, suffix=""):
         self.api = api
         self.path = path
         self.suffix = suffix
 
     def __getitem__(self, item):
-        return EndPoint(self.api,
-                        '/'.join([self.path, str(item)]),
-                        self.suffix)
+        return EndPoint(self.api, "/".join([self.path, str(item)]), self.suffix)
 
     def __getattr__(self, attr):
         if attr in HTTP_VERBS:
@@ -62,19 +60,19 @@ class EndPoint(object):
     def __call__(self, **kwargs):
         return self.GET(**kwargs)
 
-    def build_url(self, verb='GET', **kwargs):
+    def build_url(self, verb="GET", **kwargs):
         """
         Build a URL from base path, use kwargs to build querystring.
 
         """
         path = self.path
         # Check whether to ensure trailing slash on POST:
-        if self.api.ensure_slash and verb == 'POST' and not path.endswith('/'):
-            path = path + '/'
-        extra = ''
+        if self.api.ensure_slash and verb == "POST" and not path.endswith("/"):
+            path = path + "/"
+        extra = ""
         if kwargs:
             querystring = urlencode(kwargs)
-            extra = '?' + querystring
+            extra = "?" + querystring
         return "{0}{1}{2}".format(path, self.suffix, extra)
 
     def _http(self, verb, data=None, **kwargs):
@@ -105,8 +103,16 @@ class Api(object):
     >>> my_email = all[0].email
     """
 
-    def __init__(self, base_url, auth=None, verify_ssl_cert=True,
-                 suffix='', verbose=False, ensure_slash=False, headers=None):
+    def __init__(
+        self,
+        base_url,
+        auth=None,
+        verify_ssl_cert=True,
+        suffix="",
+        verbose=False,
+        ensure_slash=False,
+        headers=None,
+    ):
         self.ROOT = base_url
         self.auth = auth
         self.verify_ssl_cert = verify_ssl_cert
@@ -114,9 +120,11 @@ class Api(object):
         self.verbose = verbose
         self.ensure_slash = ensure_slash
         self.headers = headers or {}
-        self.headers.update({
-            'Accept': 'application/json',
-        })
+        self.headers.update(
+            {
+                "Accept": "application/json",
+            }
+        )
 
     def _http(self, verb, path, **kwargs):
         """
@@ -126,14 +134,16 @@ class Api(object):
         """
         url = self.ROOT + path
         if self.verbose:
-            print('{0} {1}'.format(verb, url))
+            print("{0} {1}".format(verb, url))
 
         method = getattr(requests, verb.lower())
-        response = method(url,
-                          auth=self.auth,
-                          verify=self.verify_ssl_cert,
-                          headers=self.headers,
-                          **kwargs)
+        response = method(
+            url,
+            auth=self.auth,
+            verify=self.verify_ssl_cert,
+            headers=self.headers,
+            **kwargs
+        )
         return _validate(response)
 
     def __getattr__(self, attr):
@@ -144,5 +154,5 @@ class Api(object):
         """
         if attr in HTTP_VERBS:
             return partial(self._http, attr)
-        path = '/'.join(attr.split('_'))
+        path = "/".join(attr.split("_"))
         return EndPoint(self, path, self.suffix)
