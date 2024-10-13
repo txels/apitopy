@@ -37,7 +37,7 @@ def _validate(response):
 
 class EndPoint(object):
     """
-    A potential end point of an API, where we can get JSON data from.
+    A potential end point of an API, where we may get JSON data from.
 
     An instance of `EndPoint` is a callable that upon invocation performs
     a GET request. Any kwargs passed in to the call will be used to build
@@ -79,7 +79,10 @@ class EndPoint(object):
         url = self.build_url(verb, **kwargs)
         response = self.api._http(verb, url, data=data, json=json)
         if response.content:
-            return dotify(response.json())
+            try:
+                return dotify(response.json())
+            except:
+                return response.content
         else:
             return None
 
@@ -120,11 +123,12 @@ class Api(object):
         self.verbose = verbose
         self.ensure_slash = ensure_slash
         self.headers = headers or {}
-        self.headers.update(
-            {
-                "Accept": "application/vnd.github+json",
-            }
-        )
+        if not "Accept" in self.headers:
+            self.headers.update(
+                {
+                    "Accept": "application/json",
+                }
+            )
 
     def _http(self, verb, path, **kwargs):
         """
