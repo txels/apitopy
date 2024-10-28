@@ -8,7 +8,7 @@ setup(
     description="Pythonic access to HTTP APIs",
     long_description="Access arbitrary HTTP APIs as if they were python objects",
     long_description_content_type="text/markdown",
-    version="0.5.0",
+    version="0.6.0",
     author="Carles Barrobés",
     author_email="carles@barrobes.com",
     url="https://github.com/txels/apitopy",
