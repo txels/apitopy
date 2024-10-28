@@ -77,7 +77,7 @@ class EndPoint(object):
 
     def _http(self, verb, data=None, json=None, **kwargs):
         url = self.build_url(verb, **kwargs)
-        response = self.api._http(verb, url, data=data, json=json)
+        response = self.api._http(verb, url, data=data, json=json, **kwargs)
         if response.content:
             try:
                 return dotify(response.json())
